@@ -38,12 +38,6 @@ public class AuthorService {
         if(optionalAuthor.isPresent()) {
             Author author = optionalAuthor.get();
 
-            // Books
-            if(authorDetails.getBooks() != null && !authorDetails.getBooks().isEmpty()) {
-                // Restituisci un errore specifico all'utente
-                throw new WebApplicationException("You cannot edit an author's books directly. You must edit authors on each book.", Response.Status.BAD_REQUEST);
-            }
-
             // First Name
             if(authorDetails.getFirstName() != null) {
                 author.setFirstName(authorDetails.getFirstName());

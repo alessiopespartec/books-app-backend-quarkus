@@ -36,8 +36,14 @@ public class AuthorController {
     }
 
     @POST
-    public Author createAuthor(Author author) {
-        return authorService.create(author);
+    public Response createAuthor(Author author) {
+        // If books is present in client payload, return BAD REQUEST payload
+        if (author.getBooks() != null && !author.getBooks().isEmpty()) {
+            ErrorPayload errorPayload = new ErrorPayload("Invalid Operation", "You cannot create an author's books directly. You must edit authors on the book.");
+            return Response.status(Response.Status.BAD_REQUEST).entity(errorPayload).build();
+        }
+
+        return Response.status(Response.Status.OK).entity(authorService.create(author)).build();
     }
 
     @PATCH
