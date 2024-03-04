@@ -3,6 +3,8 @@ package org.alessio.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -19,13 +21,17 @@ public class Author {
     private Long id;
 
     @NotBlank(message="cannot be blank")
+    @Pattern(regexp = "^[a-zA-Z]+(?:[\\s-][a-zA-Z]+)*$", message = "must contain only letters")
     private String firstName;
 
     @NotBlank(message="cannot be blank")
+    @Pattern(regexp = "^[a-zA-Z]+(?:[\\s-][a-zA-Z]+)*$", message = "must contain only letters")
     private String lastName;
 
+    @Past(message = "must be in the past")
     private LocalDate dob;
 
+    @Pattern(regexp = "^[a-zA-Z]+(?:[\\s-][a-zA-Z]+)*$", message = "must contain only letters")
     private String nationality;
 
     @Column(length = 2048)
