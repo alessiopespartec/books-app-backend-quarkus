@@ -23,10 +23,8 @@ import java.util.stream.Collectors;
 public class BookController {
     @Inject
     BookService bookService;
-
     @Inject
     private AuthorRepository authorRepository;
-
     @Inject
     private PublisherRepository publisherRepository;
 
@@ -47,6 +45,22 @@ public class BookController {
 
     @POST
     public Response createBook(Book book) {
+        // Check author errors
+        List<ErrorPayload> authorErrors = verifyAuthors(book);
+        if (!authorErrors.isEmpty()) {
+            String errorMessage = authorErrors.stream()
+                    .map(ErrorPayload::getMessage)
+                    .collect(Collectors.joining(", "));
+            return Response.status(Response.Status.BAD_REQUEST).entity(new ErrorPayload("Multiple Author Errors", errorMessage)).build();
+        }
+
+        // Check publisher errors
+        ErrorPayload publisherError = verifyPublisher(book);
+        if (publisherError != null) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(publisherError).build();
+        }
+
+        // Book creation
         return Response.status(Response.Status.OK).entity(bookService.create(book)).build();
     }
 
@@ -93,27 +107,22 @@ public class BookController {
 
     private List<ErrorPayload> verifyAuthors(Book book) {
         List<ErrorPayload> errors = new ArrayList<>();
-
-        for (Author author : book.getAuthors()) {
-            if (author.getId() == null) {
-                errors.add(new ErrorPayload("Validation Error", "Author ID cannot be null"));
-                continue;
-            }
-
-            if (authorRepository.findById(author.getId()) == null) {
-                errors.add(new ErrorPayload("Not Found", "Author with ID " + author.getId() + " not found"));
+        if (book.getAuthors() != null && !book.getAuthors().isEmpty()) {
+            for (Author author : book.getAuthors()) {
+                if (author.getId() != null && authorRepository.findById(author.getId()) == null) {
+                    errors.add(new ErrorPayload("Not Found", "Author with ID " + author.getId() + " not found"));
+                }
             }
         }
         return errors;
     }
 
-    private ErrorPayload verifyPublisher(Book book) {
-        if (book.getPublisher().getId() == null) {
-            return new ErrorPayload("Validation Error", "Publisher ID cannot be null");
-        }
 
-        if (publisherRepository.findById(book.getPublisher().getId()) == null) {
-            return new ErrorPayload("Not Found", "Publisher with ID " + book.getPublisher().getId() + " not found");
+    private ErrorPayload verifyPublisher(Book book) {
+        if (book.getPublisher() != null && book.getPublisher().getId() != null) {
+            if (publisherRepository.findById(book.getPublisher().getId()) == null) {
+                return new ErrorPayload("Not Found", "Publisher with ID " + book.getPublisher().getId() + " not found");
+            }
         }
         return null;
     }

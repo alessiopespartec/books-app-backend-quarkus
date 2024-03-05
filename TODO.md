@@ -1,4 +1,11 @@
 ## Bug Fix
-- [ ] Nelle POST di Book:
-  - quando inserisco un Publisher mi va in eccezione l'API, ignorando la validazione se esiste o meno.
-  - quando inserisco un Author con id che esiste, sembra che mi crei un nuovo autore (tutti i campi come null). Infatti se ottengo il libro, non mi appare associato ad alcun autore.
+
+Quando faccio la PATCH del libro e non inserisco la voce "authors":
+mi azzera gli autori di quel libro (e viceversa).
+Deve invece ignorarmi i valori del payload e non modificare gli autori del libro.
+
+Quando faccio una POST del libro,
+non mi tornano i valori aggiornati degli autori e dei publisher.
+Invece con le GET tornano aggiornati.
+
+PATCH di Publisher restituisce un errore, ma va nel database.

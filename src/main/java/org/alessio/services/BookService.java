@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.alessio.models.Author;
 import org.alessio.models.Book;
+import org.alessio.models.Publisher;
 import org.alessio.repositories.BookRepository;
 
 import java.util.*;
@@ -24,6 +25,12 @@ public class BookService {
 
     @Transactional
     public Book create(Book book) {
+        if (book.getPublisher() != null && book.getPublisher().getId() != null) {
+
+            Publisher publisher = book.getPublisher();
+            publisher.addBook(book); // <-- this method is two-way
+        }
+
         bookRepository.persist(book);
         return book;
     }
@@ -43,6 +50,7 @@ public class BookService {
             if (bookDetails.getYear() != null) {
                 book.setYear(bookDetails.getYear());
             }
+            /*
             // AUTHORS
             // Identify authors to remove:
             // add to an array any authors that are in the database book but not in the client payload
@@ -63,6 +71,17 @@ public class BookService {
                     book.addAuthor(newAuthor); // <-- this method is two-way
                 }
             }
+            */
+
+            // Check if authors are explicitly provided in the payload
+            if (bookDetails.getAuthors() != null) {
+                // Clear current authors and set new ones from the payload
+                book.getAuthors().clear();
+                book.getAuthors().addAll(bookDetails.getAuthors());
+                // Since it's a ManyToMany relationship, you don't need to manually update the authors side
+            }
+            /*
+
             // PUBLISHER
             // Check if the publisher needs to be updated
             if (bookDetails.getPublisher() != null && !bookDetails.getPublisher().equals(book.getPublisher())) {
@@ -73,8 +92,19 @@ public class BookService {
                 // Set this book in client payload publisher
                 bookDetails.getPublisher().addBook(book); // <-- this method is two-way
             }
+            */
 
-
+            // Check if publisher is explicitly provided in the payload
+            if (bookDetails.getPublisher() != null) {
+                // If different from the current publisher, update it
+                if (!bookDetails.getPublisher().equals(book.getPublisher())) {
+                    if (book.getPublisher() != null) {
+                        book.getPublisher().removeBook(book); // Detach the book from the old publisher
+                    }
+                    book.setPublisher(bookDetails.getPublisher()); // Attach the book to the new publisher
+                    bookDetails.getPublisher().addBook(book); // Ensure the book is added to the new publisher's book list
+                }
+            }
 
             return book;
         }
