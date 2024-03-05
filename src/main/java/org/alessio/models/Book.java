@@ -2,6 +2,8 @@ package org.alessio.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Past;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -18,10 +20,11 @@ public class Book {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NonNull
+    @NotBlank(message="cannot be blank")
     private String title;
 
     @Column(name = "year_of_publication")
+    @Past(message = "must be in the past")
     private LocalDate year;
 
     @ManyToMany
@@ -35,4 +38,15 @@ public class Book {
     @JoinColumn(name = "publisher_id")
     @JsonIgnoreProperties("books")
     private Publisher publisher;
+
+    public void addAuthor(Author author) {
+        authors.add(author);
+        author.getBooks().add(this);
+    }
+
+    public void removeAuthor(Author author) {
+        authors.remove(author);
+        author.getBooks().remove(this);
+    }
+
 }

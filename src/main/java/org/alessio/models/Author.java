@@ -42,4 +42,13 @@ public class Author {
     @ManyToMany(mappedBy = "authors", fetch = FetchType.EAGER)
     @JsonIgnoreProperties("authors")
     private Set<Book> books = new HashSet<>();
+
+    public void addBook(Book book) {
+        books.add(book);
+    }
+
+    public void removeBook(Book book) {
+        books.remove(book);
+    }
+
 }

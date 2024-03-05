@@ -25,4 +25,15 @@ public class Publisher {
     @OneToMany(mappedBy = "publisher", fetch = FetchType.EAGER)
     @JsonIgnoreProperties("publisher")
     private Set<Book> books = new HashSet<>();
+
+    public void addBook(Book book) {
+        books.add(book);
+        book.setPublisher(this);
+    }
+
+    public void removeBook(Book book) {
+        books.remove(book);
+        book.setPublisher(null);
+    }
+
 }

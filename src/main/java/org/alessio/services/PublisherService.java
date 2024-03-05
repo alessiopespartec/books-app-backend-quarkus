@@ -3,9 +3,6 @@ package org.alessio.services;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-import org.alessio.models.Author;
 import org.alessio.models.Publisher;
 import org.alessio.repositories.PublisherRepository;
 

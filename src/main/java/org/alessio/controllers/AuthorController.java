@@ -84,7 +84,7 @@ public class AuthorController {
             validationErrors.add("lastName must contain only letters");
         }
 
-        // If error array is not empty, return BAD REQUEST payload
+        // If error array contains at least a value, return it with BAD REQUEST payload
         if (!validationErrors.isEmpty()) {
             String errorMessage = String.join(", ", validationErrors);
             ErrorPayload errorPayload = new ErrorPayload("Validation Error", errorMessage);
