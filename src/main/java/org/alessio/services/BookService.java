@@ -74,7 +74,7 @@ public class BookService {
             */
 
             // Check if authors are explicitly provided in the payload
-            if (bookDetails.getAuthors() != null) {
+            if (bookDetails.getAuthors() != null && !bookDetails.getAuthors().isEmpty()) {
                 // Clear current authors and set new ones from the payload
                 book.getAuthors().clear();
                 book.getAuthors().addAll(bookDetails.getAuthors());
@@ -112,7 +112,22 @@ public class BookService {
     }
 
     @Transactional
-    public void delete(Long id) {
-        bookRepository.deleteById(id);
+    public void delete(Book book) {
+        // Rimuovi il libro dagli autori associati
+        Set<Author> authors = book.getAuthors();
+        if (authors != null) {
+            for (Author author : authors) {
+                author.removeBook(book); // Utilizza il metodo two-way per rimuovere il libro
+            }
+        }
+
+        // Rimuovi il libro dall'editore associato
+        Publisher publisher = book.getPublisher();
+        if (publisher != null) {
+            publisher.removeBook(book); // Utilizza il metodo two-way per rimuovere il libro
+        }
+
+        bookRepository.delete(book);
     }
+
 }

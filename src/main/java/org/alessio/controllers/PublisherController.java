@@ -85,7 +85,9 @@ public class PublisherController {
         if (updatedPublisher == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(updatedPublisher).build();
+        return Response.status(Response.Status.OK)
+                .entity(updatedPublisher)
+                .build();
     }
 
     @DELETE

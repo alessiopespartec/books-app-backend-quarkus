@@ -109,10 +109,24 @@ public class BookController {
         }
 
         Book updatedBook = bookService.update(id, book);
-        return Response.ok(updatedBook).build();
+        return this.getBookById(updatedBook.getId().toString());
     }
 
-    // DELETE ONE...
+    @DELETE
+    @Path("/{id}")
+    public Response deleteBook(@PathParam("id") String pathId) {
+        Long id = PathParamValidator.validateAndConvert(pathId);
+
+        Optional<Book> existingBook = bookService.findById(id);
+        if (existingBook.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(new ErrorPayload("Not Found", "Book with ID " + id + " not found"))
+                    .build();
+        }
+
+        bookService.delete(existingBook.get());
+        return Response.status(Response.Status.NO_CONTENT).build();
+    }
 
 
 
