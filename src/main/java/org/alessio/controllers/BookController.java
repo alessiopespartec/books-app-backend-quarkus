@@ -51,7 +51,9 @@ public class BookController {
             String errorMessage = authorErrors.stream()
                     .map(ErrorPayload::getMessage)
                     .collect(Collectors.joining(", "));
-            return Response.status(Response.Status.BAD_REQUEST).entity(new ErrorPayload("Multiple Author Errors", errorMessage)).build();
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ErrorPayload("Multiple Author Errors", errorMessage))
+                    .build();
         }
 
         // Check publisher errors
@@ -61,7 +63,16 @@ public class BookController {
         }
 
         // Book creation
-        return Response.status(Response.Status.OK).entity(bookService.create(book)).build();
+        Book newBook = bookService.create(book);
+        if (newBook == null) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorPayload("Internal server Error", "A general error has occurred"))
+                    .build();
+        }
+
+        return getBookById(newBook.getId().toString());
+
+        // return Response.status(Response.Status.OK).entity(bookService.create(book)).build();
     }
 
     @PATCH

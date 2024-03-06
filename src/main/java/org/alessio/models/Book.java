@@ -28,14 +28,14 @@ public class Book {
     @Past(message = "must be in the past")
     private LocalDate year;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "book_author",
             joinColumns = @JoinColumn(name = "book_id"),
             inverseJoinColumns = @JoinColumn(name = "author_id"))
     @JsonIgnoreProperties("books")
     private Set<Author> authors = new HashSet<>();
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "publisher_id")
     @JsonIgnoreProperties("books")
     private Publisher publisher;
