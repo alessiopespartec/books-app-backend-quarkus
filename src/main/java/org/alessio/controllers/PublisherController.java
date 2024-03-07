@@ -21,8 +21,6 @@ public class PublisherController {
 
     @GET
     public Response getAll() {
-        // return publisherService.findAll();
-
         List<Publisher> publishers = publisherService.findAll();
 
         if (publishers.isEmpty()) {
@@ -76,7 +74,9 @@ public class PublisherController {
                     null,
                     400
             );
-            return Response.status(Response.Status.BAD_REQUEST).entity(customResponse).build();
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(customResponse)
+                    .build();
         }
 
         CustomResponse customResponse = new CustomResponse(
@@ -156,9 +156,9 @@ public class PublisherController {
                 null,
                 "Publisher with ID " + publisherToDelete.getId() +" deleted successfully",
                 null,
-                204
+                200
         );
-        return Response.status(Response.Status.NO_CONTENT)
+        return Response.status(Response.Status.OK)
                 .entity(customResponse)
                 .build();
     }
