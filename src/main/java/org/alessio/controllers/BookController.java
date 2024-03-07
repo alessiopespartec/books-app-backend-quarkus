@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.alessio.exception.CustomNotFoundException;
 import org.alessio.response.CustomResponse;
 import org.alessio.middleware.PathParamValidator;
 import org.alessio.models.Author;
@@ -29,18 +30,47 @@ public class BookController {
     private PublisherRepository publisherRepository;
 
     @GET
-    public List<Book> getAll() {
-        return bookService.findAll();
+    public Response getAll() {
+        List<Book> books = bookService.findAll();
+
+        if (books.isEmpty()) {
+            CustomResponse customResponse = new CustomResponse(
+                    true,
+                    "Not found",
+                    "No books were found",
+                    null,
+                    404
+            );
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(customResponse)
+                    .build();
+        }
+
+        CustomResponse customResponse = new CustomResponse(
+                false,
+                null,
+                "Books found successfully",
+                books,
+                200
+        );
+        return Response.status(Response.Status.OK).entity(customResponse).build();
     }
 
     @GET
     @Path("/{id}")
     public Response getBookById(@PathParam("id") String pathId) {
-        Long id = PathParamValidator.validateAndConvert(pathId);
+        Book book = validateAndFindBookById(pathId);
 
-        return bookService.findById(id)
-                .map(book -> Response.ok(book).build())
-                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+        CustomResponse customResponse = new CustomResponse(
+                false,
+                null,
+                "Book found successfully",
+                book,
+                200
+        );
+        return Response.status(Response.Status.OK)
+                .entity(customResponse)
+                .build();
     }
 
     @POST
@@ -51,22 +81,37 @@ public class BookController {
             String errorMessage = authorErrors.stream()
                     .map(CustomResponse::getMessage)
                     .collect(Collectors.joining(", "));
+            CustomResponse customResponse = new CustomResponse(
+                    true,
+                    "Multiple Author Errors",
+                    errorMessage,
+                    null,
+                    400
+            );
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new CustomResponse("Multiple Author Errors", errorMessage))
+                    .entity(customResponse)
                     .build();
         }
 
         // Check publisher errors
-        CustomResponse publisherError = verifyPublisher(book);
-        if (publisherError != null) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(publisherError).build();
+        CustomResponse customResponse = verifyPublisher(book);
+        if (customResponse != null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(customResponse)
+                    .build();
         }
 
         // Book creation
         Book newBook = bookService.create(book);
         if (newBook == null) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new CustomResponse("Internal server Error", "A general error has occurred"))
+                    .entity(new CustomResponse(
+                            true,
+                            "Internal server Error",
+                            "An unexpected error has occurred",
+                            null,
+                            500
+                    ))
                     .build();
         }
 
@@ -77,55 +122,73 @@ public class BookController {
 
     @PATCH
     @Path("/{id}")
-    public Response updateBook(@PathParam("id") String pathId, Book book) {
-        Long id = PathParamValidator.validateAndConvert(pathId);
-
-        // Find book, or else throw NOT FOUND payload
-        Optional<Book> existingBookOpt = bookService.findById(id);
-        if (existingBookOpt.isEmpty()) {
-            CustomResponse customResponse = new CustomResponse("Not Found", "Book with ID " + id + " not found");
-            return Response.status(Response.Status.NOT_FOUND).entity(customResponse).build();
-        }
+    public Response updateBook(@PathParam("id") String pathId, Book bookDetails) {
+        Book existingBook = validateAndFindBookById(pathId);
 
         // Trim title
-        if (book.getTitle() != null) {
-            String trimmedTitle = book.getTitle().trim().replaceAll("\\s+", " ");
-            book.setTitle(trimmedTitle); // Update client payload Title
+        if (bookDetails.getTitle() != null) {
+            String trimmedTitle = bookDetails.getTitle().trim().replaceAll("\\s+", " ");
+            bookDetails.setTitle(trimmedTitle); // Update client payload Title
         }
 
         // Check authors errors
-        List<CustomResponse> authorErrors = verifyAuthors(book);
+        List<CustomResponse> authorErrors = verifyAuthors(bookDetails);
         if (!authorErrors.isEmpty()) {
             String errorMessage = authorErrors.stream()
                     .map(CustomResponse::getMessage)
                     .collect(Collectors.joining(", "));
-            return Response.status(Response.Status.BAD_REQUEST).entity(new CustomResponse("Multiple Author Errors", errorMessage)).build();
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new CustomResponse(
+                            true,
+                            "Multiple Author Errors",
+                            errorMessage,
+                            null,
+                            400
+                    ))
+                    .build();
         }
 
         // Check publisher errors
-        CustomResponse publisherError = verifyPublisher(book);
-        if (publisherError != null) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(publisherError).build();
+        CustomResponse publisherErrorResponse = verifyPublisher(bookDetails);
+        if (publisherErrorResponse != null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(publisherErrorResponse)
+                    .build();
         }
 
-        Book updatedBook = bookService.update(id, book);
-        return this.getBookById(updatedBook.getId().toString());
+        Book updatedBook = bookService.update(existingBook.getId(), bookDetails);
+
+        CustomResponse customResponse = new CustomResponse(
+                false,
+                null,
+                "Book updated successfully",
+                updatedBook,
+                200
+        );
+        return Response.status(Response.Status.OK)
+                .entity(customResponse)
+                .build();
+
+        // return this.getBookById(updatedBook.getId().toString());
     }
 
     @DELETE
     @Path("/{id}")
     public Response deleteBook(@PathParam("id") String pathId) {
-        Long id = PathParamValidator.validateAndConvert(pathId);
+        Book bookToDelete = validateAndFindBookById(pathId);
 
-        Optional<Book> existingBook = bookService.findById(id);
-        if (existingBook.isEmpty()) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new CustomResponse("Not Found", "Book with ID " + id + " not found"))
-                    .build();
-        }
+        bookService.delete(bookToDelete);
 
-        bookService.delete(existingBook.get());
-        return Response.status(Response.Status.NO_CONTENT).build();
+        CustomResponse customResponse = new CustomResponse(
+                false,
+                null,
+                "Book with ID " + bookToDelete.getId() +" deleted successfully",
+                null,
+                200
+        );
+        return Response.status(Response.Status.OK)
+                .entity(customResponse)
+                .build();
     }
 
 
@@ -146,9 +209,21 @@ public class BookController {
     private CustomResponse verifyPublisher(Book book) {
         if (book.getPublisher() != null && book.getPublisher().getId() != null) {
             if (publisherRepository.findById(book.getPublisher().getId()) == null) {
-                return new CustomResponse("Not Found", "Publisher with ID " + book.getPublisher().getId() + " not found");
+                return new CustomResponse(
+                        true,
+                        "Not Found",
+                        "Publisher with ID " + book.getPublisher().getId() + " not found",
+                        null,
+                        400
+                );
             }
         }
         return null;
+    }
+
+    private Book validateAndFindBookById(String pathId) {
+        Long id = PathParamValidator.validateAndConvert(pathId);
+        return bookService.findById(id)
+                .orElseThrow(() -> new CustomNotFoundException("Book with ID " + id + " not found"));
     }
 }
