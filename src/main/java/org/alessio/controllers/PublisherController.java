@@ -1,25 +1,40 @@
 package org.alessio.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.security.identity.SecurityIdentity;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.alessio.exception.CustomNotFoundException;
 import org.alessio.middleware.PathParamValidator;
 import org.alessio.models.Publisher;
 import org.alessio.response.CustomResponse;
+import org.alessio.security.RequiredScope;
 import org.alessio.services.PublisherService;
 
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
-@Path("/publishers")
+@Path("/api/v1/publishers")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class PublisherController {
     @Inject
     PublisherService publisherService;
 
+    @Inject
+    SecurityIdentity identity;
+
     @GET
+    @RequiredScope("publishers_read")
     public Response getAll() {
         List<Publisher> publishers = publisherService.findAll();
 
