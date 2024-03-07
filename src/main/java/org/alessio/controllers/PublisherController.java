@@ -4,15 +4,13 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.alessio.exception.ErrorPayload;
-import org.alessio.exception.PathParamValidator;
-import org.alessio.models.Author;
+import org.alessio.exception.CustomNotFoundException;
+import org.alessio.middleware.PathParamValidator;
 import org.alessio.models.Publisher;
+import org.alessio.response.CustomResponse;
 import org.alessio.services.PublisherService;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Path("/publishers")
 @Produces(MediaType.APPLICATION_JSON)
@@ -22,87 +20,152 @@ public class PublisherController {
     PublisherService publisherService;
 
     @GET
-    public List<Publisher> getAll() {
-        return publisherService.findAll();
+    public Response getAll() {
+        // return publisherService.findAll();
+
+        List<Publisher> publishers = publisherService.findAll();
+
+        if (publishers.isEmpty()) {
+            CustomResponse customResponse = new CustomResponse(
+                    true,
+                    "Not found",
+                    "No publishers were found",
+                    null,
+                    404
+            );
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(customResponse)
+                    .build();
+        }
+
+        CustomResponse customResponse = new CustomResponse(
+                false,
+                null,
+                "Publishers found successfully",
+                publishers,
+                200
+        );
+        return Response.status(Response.Status.OK).entity(customResponse).build();
     }
 
     @GET
     @Path("/{id}")
     public Response getPublisherById(@PathParam("id") String pathId) {
-        Long id = PathParamValidator.validateAndConvert(pathId);
+        Publisher publisher = validateAndFindPublisherById(pathId);
 
-        return publisherService.findById(id)
-                .map(publisher -> Response.ok(publisher).build())
-                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+        CustomResponse customResponse = new CustomResponse(
+                false,
+                null,
+                "Publisher found successfully",
+                publisher,
+                200
+        );
+        return Response.status(Response.Status.OK)
+                .entity(customResponse)
+                .build();
     }
 
     @POST
     public Response createPublisher(Publisher publisher) {
-        // If books is present in client payload, return BAD REQUEST payload
+        // If books is present in client payload, return BAD REQUEST
         if (publisher.getBooks() != null && !publisher.getBooks().isEmpty()) {
-            ErrorPayload errorPayload = new ErrorPayload("Invalid Operation", "You cannot create a publisher's books directly. You must edit the publisher on the book.");
-            return Response.status(Response.Status.BAD_REQUEST).entity(errorPayload).build();
+            CustomResponse customResponse = new CustomResponse(
+                    true,
+                    "Invalid Operation",
+                    "You cannot create a publisher's books directly. You must edit the publisher on the book",
+                    null,
+                    400
+            );
+            return Response.status(Response.Status.BAD_REQUEST).entity(customResponse).build();
         }
 
-        return Response.status(Response.Status.OK).entity(publisherService.create(publisher)).build();
+        CustomResponse customResponse = new CustomResponse(
+                false,
+                null,
+                "Publisher created successfully",
+                publisherService.create(publisher),
+                200
+        );
+        return Response.status(Response.Status.OK).entity(customResponse).build();
     }
 
     @PATCH
     @Path("/{id}")
-    public Response updatePublisher(@PathParam("id") String pathId, Publisher publisher) {
-        Long id = PathParamValidator.validateAndConvert(pathId);
+    public Response updatePublisher(@PathParam("id") String pathId, Publisher publisherDetails) {
+        Publisher existingPublisher = validateAndFindPublisherById(pathId);
 
-        // Find publisher, or else throw NOT FOUND payload
-        Optional<Publisher> existingPublisherOpt = publisherService.findById(id);
-        if (existingPublisherOpt.isEmpty()) {
-            ErrorPayload errorPayload = new ErrorPayload("Not Found", "Publisher with ID " + id + " not found");
-            return Response.status(Response.Status.NOT_FOUND).entity(errorPayload).build();
-        }
-
-        // If books is present in client payload, return BAD REQUEST payload
-        if (publisher.getBooks() != null && !publisher.getBooks().isEmpty()) {
-            ErrorPayload errorPayload = new ErrorPayload("Invalid Operation", "You cannot create a publisher's books directly. You must edit the publisher on the book.");
-            return Response.status(Response.Status.BAD_REQUEST).entity(errorPayload).build();
+        // If books is present in client payload, return BAD REQUEST
+        if (publisherDetails.getBooks() != null && !publisherDetails.getBooks().isEmpty()) {
+            CustomResponse customResponse = new CustomResponse(
+                    true,
+                    "Invalid Operation",
+                    "You cannot create a publisher's books directly. You must edit the publisher on the book",
+                    null,
+                    400
+            );
+            return Response.status(Response.Status.BAD_REQUEST).entity(customResponse).build();
         }
 
 
         // If firstName is present in client payload
-        if (publisher.getName() != null) {
+        if (publisherDetails.getName() != null) {
             // Remove space before and after firstName, also double-spaces, with trim()
-            String trimmedName = publisher.getName().trim().replaceAll("\\s+", " ");
+            String trimmedName = publisherDetails.getName().trim().replaceAll("\\s+", " ");
             // Validate firstName, or else add error string
             if (!trimmedName.matches("^[a-zA-Z]+(?:[\\s-][a-zA-Z]+)*$")) {
                 // Logic here...
                 // ...
-                ErrorPayload errorPayload = new ErrorPayload("Validation Error", "Name must contain only letters");
-                return Response.status(Response.Status.BAD_REQUEST).entity(errorPayload).build();
+                CustomResponse customResponse = new CustomResponse(
+                        true,
+                        "Validation Error",
+                        "Name must contain only letters",
+                        null,
+                        400
+                );
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(customResponse)
+                        .build();
             } else {
-                publisher.setName(trimmedName); // Update client payload name
+                publisherDetails.setName(trimmedName); // Update client payload name
             }
         }
 
-        Publisher updatedPublisher = publisherService.update(id, publisher);
-        if (updatedPublisher == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        Publisher updatedPublisher = publisherService.update(existingPublisher.getId(), publisherDetails);
+
+        CustomResponse customResponse = new CustomResponse(
+                false,
+                null,
+                "Publisher updated successfully",
+                updatedPublisher,
+                200
+        );
         return Response.status(Response.Status.OK)
-                .entity(updatedPublisher)
+                .entity(customResponse)
                 .build();
     }
 
     @DELETE
     @Path("/{id}")
     public Response deletePublisher(@PathParam("id") String pathId) {
+        Publisher publisherToDelete = validateAndFindPublisherById(pathId);
+
+        publisherService.delete(publisherToDelete.getId());
+
+        CustomResponse customResponse = new CustomResponse(
+                false,
+                null,
+                "Publisher with ID " + publisherToDelete.getId() +" deleted successfully",
+                null,
+                204
+        );
+        return Response.status(Response.Status.NO_CONTENT)
+                .entity(customResponse)
+                .build();
+    }
+
+    private Publisher validateAndFindPublisherById(String pathId) {
         Long id = PathParamValidator.validateAndConvert(pathId);
-
-        // Find publisher, or else throw NOT FOUND payload
-        Optional<Publisher> existingPublisherOpt = publisherService.findById(id);
-        if (existingPublisherOpt.isEmpty()) {
-            ErrorPayload errorPayload = new ErrorPayload("Not Found", "Publisher with ID " + id + " not found");
-            return Response.status(Response.Status.NOT_FOUND).entity(errorPayload).build();
-        }
-
-        publisherService.delete(id);
-        return Response.status(Response.Status.NO_CONTENT).build();
+        return publisherService.findById(id)
+                .orElseThrow(() -> new CustomNotFoundException("Publisher with ID " + id + " not found"));
     }
 }

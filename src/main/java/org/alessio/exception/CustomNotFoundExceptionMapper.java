@@ -4,22 +4,20 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.alessio.response.CustomResponse;
-import org.hibernate.exception.DataException;
 
 @Provider
-public class DataExceptionMapper implements ExceptionMapper<DataException> {
-
+public class CustomNotFoundExceptionMapper implements ExceptionMapper<CustomNotFoundException> {
     @Override
-    public Response toResponse(DataException exception) {
+    public Response toResponse(CustomNotFoundException exception) {
         CustomResponse customResponse = new CustomResponse(
                 true,
-                "Validation data error",
-                "One or more fields exceed the maximum length allowed",
+                "Not Found",
+                exception.getMessage(),
                 null,
-                400
+                404
         );
 
-        return Response.status(Response.Status.BAD_REQUEST)
+        return Response.status(Response.Status.NOT_FOUND)
                 .entity(customResponse)
                 .build();
     }

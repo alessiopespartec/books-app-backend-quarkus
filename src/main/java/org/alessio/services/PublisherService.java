@@ -30,7 +30,7 @@ public class PublisherService {
 
     @Transactional
     public Publisher update(Long id, Publisher publisherDetails) {
-        Optional<Publisher> optionalPublisher = publisherRepository.findByIdOptional(id);
+        Optional<Publisher> optionalPublisher = this.findById(id);
 
         if(optionalPublisher.isPresent()) {
             Publisher publisher = optionalPublisher.get();

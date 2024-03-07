@@ -1,4 +1,4 @@
-package org.alessio.exception;
+package org.alessio.middleware;
 
 import org.alessio.exception.InvalidParameterException;
 

@@ -4,8 +4,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.alessio.exception.ErrorPayload;
-import org.alessio.exception.PathParamValidator;
+import org.alessio.response.CustomResponse;
+import org.alessio.middleware.PathParamValidator;
 import org.alessio.models.Author;
 import org.alessio.services.AuthorService;
 
@@ -39,7 +39,7 @@ public class AuthorController {
     public Response createAuthor(Author author) {
         // If books is present in client payload, return BAD REQUEST payload
         if (author.getBooks() != null && !author.getBooks().isEmpty()) {
-            ErrorPayload errorPayload = new ErrorPayload("Invalid Operation", "You cannot create an author's books directly. You must edit authors on the book.");
+            CustomResponse errorPayload = new CustomResponse("Invalid Operation", "You cannot create an author's books directly. You must edit authors on the book.");
             return Response.status(Response.Status.BAD_REQUEST).entity(errorPayload).build();
         }
 
@@ -54,13 +54,13 @@ public class AuthorController {
         // Find author, or else throw NOT FOUND payload
         Optional<Author> existingAuthorOpt = authorService.findById(id);
         if (existingAuthorOpt.isEmpty()) {
-            ErrorPayload errorPayload = new ErrorPayload("Not Found", "Author with ID " + id + " not found");
+            CustomResponse errorPayload = new CustomResponse("Not Found", "Author with ID " + id + " not found");
             return Response.status(Response.Status.NOT_FOUND).entity(errorPayload).build();
         }
 
         // If books is present in client payload, return BAD REQUEST payload
         if (author.getBooks() != null && !author.getBooks().isEmpty()) {
-            ErrorPayload errorPayload = new ErrorPayload("Invalid Operation", "You cannot edit an author's books directly. You must edit authors on each book.");
+            CustomResponse errorPayload = new CustomResponse("Invalid Operation", "You cannot edit an author's books directly. You must edit authors on each book.");
             return Response.status(Response.Status.BAD_REQUEST).entity(errorPayload).build();
         }
 
@@ -87,7 +87,7 @@ public class AuthorController {
         // If error array contains at least a value, return it with BAD REQUEST payload
         if (!validationErrors.isEmpty()) {
             String errorMessage = String.join(", ", validationErrors);
-            ErrorPayload errorPayload = new ErrorPayload("Validation Error", errorMessage);
+            CustomResponse errorPayload = new CustomResponse("Validation Error", errorMessage);
             return Response.status(Response.Status.BAD_REQUEST).entity(errorPayload).build();
         }
 
@@ -106,7 +106,7 @@ public class AuthorController {
         // Find author, or else throw NOT FOUND payload
         Optional<Author> existingAuthorOpt = authorService.findById(id);
         if (existingAuthorOpt.isEmpty()) {
-            ErrorPayload errorPayload = new ErrorPayload("Not Found", "Author with ID " + id + " not found");
+            CustomResponse errorPayload = new CustomResponse("Not Found", "Author with ID " + id + " not found");
             return Response.status(Response.Status.NOT_FOUND).entity(errorPayload).build();
         }
 
